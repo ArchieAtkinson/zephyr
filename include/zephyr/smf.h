@@ -51,11 +51,11 @@
  * @param _run  State run function
  * @param _exit  State exit function
  */
-#define SMF_CREATE_TRANS(_inital_state, _next_state, _event, _guard, _action) \
+#define SMF_CREATE_TRANS(_inital_state, _next_state, _event_type, _guard, _action) \
 { \
 	.current_state = _inital_state, \
 	.next_state   = _next_state,   \
-	.event  = _event,   \
+	.event_type  = _event_type,   \
     .guard = _guard, \
 	.action   = _action,   \
 }
@@ -113,7 +113,7 @@ typedef bool (*smf_transition_action)(void *obj);
 struct smf_transition {
     const struct smf_state *current_state;
     const struct smf_state *next_state;
-    int32_t event;
+    const char * event_type;
     smf_transition_guard guard;
     smf_transition_action action;
 };
@@ -184,9 +184,14 @@ void smf_set_terminate(struct smf_ctx *ctx, int32_t val);
  */
 int32_t smf_run_state(struct smf_ctx *ctx);
 
-void smf_process_event(struct smf_ctx * ctx, int32_t event);
+struct smf_event_header {
+    const char * event_type;
+};
+
+void smf_process_event(struct smf_ctx * ctx, struct smf_event_header* header);
 
 void smf_init_trans(struct smf_ctx * ctx, const struct smf_transition *trans_table, int32_t table_size);
+
 
 #ifdef __cplusplus
 }

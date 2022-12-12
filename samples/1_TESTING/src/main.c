@@ -76,12 +76,30 @@ typedef enum {
     SMF_EVENT2,
     SMF_EVENT3,
 } smf_demo_t;
+
+
+#define SMF_EVENT(_event_type) #_event_type
+
+#define SMF_EVENT_CREATE(_name, _event_type) \
+    struct _event_type _name; \
+    _name.header.event_type = #_event_type \
+
+#define SMF_EVENT_SEND(_name) (&_name.header)
+
+struct foo_event{
+    struct smf_event_header header;
+    int a;
+};
+
 const struct smf_transition demo_trans[] = {
-    SMF_CREATE_TRANS(&demo_states[S0], &demo_states[S1], SMF_EVENT1, s0_2_s1_guard, s0_2_s1_action),
+    SMF_CREATE_TRANS(&demo_states[S0], &demo_states[S1], SMF_EVENT(foo_event), s0_2_s1_guard, s0_2_s1_action),
 };
 
 void main(void)
 {   
+    SMF_EVENT_CREATE(foo, foo_event);
+    foo.a = 5;
+
     bool run_once = true;
         int32_t ret;
         smf_init_trans(SMF_CTX(&s_obj), demo_trans, 1);
@@ -97,7 +115,7 @@ void main(void)
                         break;
                 }
                 if(run_once){
-                    smf_process_event(SMF_CTX(&s_obj), SMF_EVENT1);
+                    smf_process_event(SMF_CTX(&s_obj), SMF_EVENT_SEND(foo));
                     run_once = false;
                 }
                 
