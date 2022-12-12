@@ -195,6 +195,26 @@ void smf_set_initial(struct smf_ctx *ctx, const struct smf_state *init_state)
 	}
 }
 
+void smf_init_trans(struct smf_ctx * ctx, const struct smf_transition *trans_table, int32_t table_size)
+{
+    ctx->transition_table = trans_table;
+    ctx->table_size = table_size;
+}
+
+void smf_process_event(struct smf_ctx * ctx, int32_t event)
+{
+    if(ctx->transition_table){
+        for (int i = 0; i < ctx->table_size; i++) {
+            bool current_state_check = ctx->transition_table->current_state == ctx->current;
+            bool event_check = event == ctx->transition_table->event;
+            bool guard = ctx->transition_table->guard(ctx);
+            if (current_state_check && event_check && guard) {
+                smf_set_state(ctx, ctx->transition_table->next_state);
+            }
+        }
+    }
+}
+
 void smf_set_state(struct smf_ctx *const ctx, const struct smf_state *target)
 {
 	struct internal_ctx * const internal = (void *) &ctx->internal;
@@ -247,9 +267,8 @@ void smf_set_state(struct smf_ctx *const ctx, const struct smf_state *target)
 	/* Now execute transition actions*/
 
 	if (ctx->transition_table) {
-		int i;
-        for (i = 0; i < ctx->table_size; i++) {
-            bool current_state_check = ctx->transition_table->current_state == ctx->current;
+        for (int i = 0; i < ctx->table_size; i++) {
+            bool current_state_check = ctx->transition_table->current_state == ctx->previous;
             if (current_state_check) {
                 ctx->transition_table->action(ctx);
             }

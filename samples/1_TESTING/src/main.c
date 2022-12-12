@@ -35,7 +35,6 @@ static void s0_exit(void *o)
 static void s1_run(void *o)
 {   
     LOG_INF("%s", __func__);
-    smf_set_state(SMF_CTX(&s_obj), &demo_states[S2]);
 }
 static void s1_exit(void *o)
 {
@@ -50,7 +49,6 @@ static void s2_entry(void *o)
 static void s2_run(void *o)
 {
     LOG_INF("%s", __func__);
-    smf_set_state(SMF_CTX(&s_obj), &demo_states[S0]);
 }
 
 /* Populate state table */
@@ -61,58 +59,32 @@ static const struct smf_state demo_states[] = {
 	/* State S2 does not have an exit action */
 	[S2] = SMF_CREATE_STATE(s2_entry, s2_run, NULL),
 };
-
-
-
-
-
-static bool s1_2_s2_guard(void *o)
+static bool s0_2_s1_guard(void *o)
 {
     LOG_INF("%s", __func__);
     return true;
 };
 
-static bool s1_2_s2_action(void *o)
+static bool s0_2_s1_action(void *o)
 {
     LOG_INF("%s", __func__);
     return true;
 };
 
-
-struct smf_transition demo_trans[] = {{
-	.current_state = &demo_states[S0],
-	.future_state = &demo_states[S1],
-	.event = SMF_EVENT1,
-	.guard = s1_2_s2_guard,
-	.action = s1_2_s2_action,
-}};
-
-void smf_init(struct smf_ctx * ctx, struct smf_transition *trans_table, int32_t table_size)
-{
-    ctx->transition_table = trans_table;
-    ctx->table_size = table_size;
-}
-
-void smf_process_event(struct smf_ctx * ctx, smf_event_t event)
-{
-    __ASSERT_NO_MSG(event < FINAL && event >= 0);
-    int i;
-    if (ctx->transition_table) {
-        for (i = 0; i < ctx->table_size; i++) {
-            bool current_state_check = ctx->transition_table->current_state == ctx->current;
-            bool event_check = event == ctx->transition_table->event;
-            bool guard = ctx->transition_table->guard(ctx);
-            if (current_state_check && event_check && guard) {
-                smf_set_state(SMF_CTX(&s_obj), ctx->transition_table->future_state);
-            }
-        }
-    }
-}
+typedef enum {
+    SMF_EVENT1,
+    SMF_EVENT2,
+    SMF_EVENT3,
+} smf_demo_t;
+const struct smf_transition demo_trans[] = {
+    SMF_CREATE_TRANS(&demo_states[S0], &demo_states[S1], SMF_EVENT1, s0_2_s1_guard, s0_2_s1_action),
+};
 
 void main(void)
-{
+{   
+    bool run_once = true;
         int32_t ret;
-        smf_init(SMF_CTX(&s_obj), demo_trans, 1);
+        smf_init_trans(SMF_CTX(&s_obj), demo_trans, 1);
         /* Set initial state */
         smf_set_initial(SMF_CTX(&s_obj), &demo_states[S0]);
 
@@ -124,7 +96,15 @@ void main(void)
                         /* handle return code and terminate state machine */
                         break;
                 }
-                smf_process_event(SMF_CTX(&s_obj), SMF_EVENT1);
+                if(run_once){
+                    smf_process_event(SMF_CTX(&s_obj), SMF_EVENT1);
+                    run_once = false;
+                }
+                
                 k_msleep(1000);
         }
 }
+
+
+
+    

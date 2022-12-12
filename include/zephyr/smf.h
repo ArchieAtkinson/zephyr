@@ -45,6 +45,22 @@
 #endif /* CONFIG_SMF_ANCESTOR_SUPPORT */
 
 /**
+ * @brief Macro to create a flat state.
+ *
+ * @param _entry  State entry function
+ * @param _run  State run function
+ * @param _exit  State exit function
+ */
+#define SMF_CREATE_TRANS(_inital_state, _next_state, _event, _guard, _action) \
+{ \
+	.current_state = _inital_state, \
+	.next_state   = _next_state,   \
+	.event  = _event,   \
+    .guard = _guard, \
+	.action   = _action,   \
+}
+
+/**
  * @brief Macro to cast user defined object to state machine
  *        context.
  *
@@ -92,17 +108,12 @@ struct smf_state {
 typedef bool (*smf_transition_guard)(void *obj);
 typedef bool (*smf_transition_action)(void *obj);
 
-typedef enum {
-    SMF_EVENT1,
-    SMF_EVENT2,
-    SMF_EVENT3,
-    SMF_FINAL
-} smf_event_t;
+
 
 struct smf_transition {
     const struct smf_state *current_state;
-    const struct smf_state *future_state;
-    smf_event_t event;
+    const struct smf_state *next_state;
+    int32_t event;
     smf_transition_guard guard;
     smf_transition_action action;
 };
@@ -127,7 +138,11 @@ struct smf_ctx {
 	 */
 	uint32_t internal;
 
-	struct smf_transition *transition_table;
+	/**
+	 * The state machine casts this to a "struct internal_ctx" and it's
+	 * 
+	 */
+	const struct smf_transition *transition_table;
 	int32_t table_size;	
 }; 
 
@@ -168,6 +183,10 @@ void smf_set_terminate(struct smf_ctx *ctx, int32_t val);
  *			   termination of the state machine.
  */
 int32_t smf_run_state(struct smf_ctx *ctx);
+
+void smf_process_event(struct smf_ctx * ctx, int32_t event);
+
+void smf_init_trans(struct smf_ctx * ctx, const struct smf_transition *trans_table, int32_t table_size);
 
 #ifdef __cplusplus
 }
