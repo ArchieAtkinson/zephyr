@@ -244,6 +244,18 @@ void smf_set_state(struct smf_ctx *const ctx, const struct smf_state *target)
 		}
 	}
 
+	/* Now execute transition actions*/
+
+	if (ctx->transition_table) {
+		int i;
+        for (i = 0; i < ctx->table_size; i++) {
+            bool current_state_check = ctx->transition_table->current_state == ctx->current;
+            if (current_state_check) {
+                ctx->transition_table->action(ctx);
+            }
+        }
+    }
+
 	/* Now execute the target entry action */
 	if (ctx->current->entry) {
 		ctx->current->entry(ctx);

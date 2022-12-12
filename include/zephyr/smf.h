@@ -89,6 +89,25 @@ struct smf_state {
 	const struct smf_state *parent;
 };
 
+typedef bool (*smf_transition_guard)(void *obj);
+typedef bool (*smf_transition_action)(void *obj);
+
+typedef enum {
+    SMF_EVENT1,
+    SMF_EVENT2,
+    SMF_EVENT3,
+    SMF_FINAL
+} smf_event_t;
+
+struct smf_transition {
+    const struct smf_state *current_state;
+    const struct smf_state *future_state;
+    smf_event_t event;
+    smf_transition_guard guard;
+    smf_transition_action action;
+};
+
+
 /** Defines the current context of the state machine. */
 struct smf_ctx {
 	/** Current state the state machine is executing. */
@@ -107,7 +126,10 @@ struct smf_ctx {
 	 * used to track state machine context
 	 */
 	uint32_t internal;
-};
+
+	struct smf_transition *transition_table;
+	int32_t table_size;	
+}; 
 
 /**
  * @brief Initializes the state machine and sets its initial state.
